@@ -4,7 +4,7 @@ Use an open-ai assistant to interpret and organise your physical inbox.
 
 ## Processing pipeline
 1. **Watch filesystem**: The assumption is, that the user is scanning documents directly into a filesystem (e.g. via an FTP server or SMB share). Any file that is added into this targeted directory is being processed. 
-2. **OCR** Optical Character Recognition is applied to the files to generate PDFs that are processable by the openai assistant.
+2. **OCR**: Optical Character Recognition (using [tesseract.js](https://tesseract.projectnaptha.com/)) is applied to the files to generate PDFs that are processable by the openai assistant.
 3. **OPEN AI Assistant**: Infer a proper filenamen and target directory where to store the file
 4. **Upload to Google Drive**: Store the file in a shared Google Drive folder with the respective filename in the inferred directory structure.
 
