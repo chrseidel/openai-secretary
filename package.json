@@ -1,0 +1,18 @@
+{
+  "name": "openai-secretary",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node --env-file config.env index.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@google-cloud/local-auth": "^3.0.1",
+    "googleapis": "^133.0.0",
+    "openai": "^4.26.1",
+    "tesseract.js": "^5.0.4"
+  }
+}
