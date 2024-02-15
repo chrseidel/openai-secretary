@@ -4,21 +4,10 @@ import { inferFileNameAndDirectory } from "./services/openaiFilename.js";
 import path from "path"
 import { storePdfInGoogleDrive } from "./services/google-drive/googleDrive.js";
 import config from "./config.js"
+import { fileWithPdfExtension } from "./services/fileUtils.js"
 
 const BASE_DIR = config.watchdir
 const WORK_DIR = config.workdir
-
-/**
- * 
- * @param {String} file 
- * @returns String
- */
-function fileWithPdfExtension(file) {
-    const filePath = path.parse(file)
-    filePath.ext = `.pdf`
-    filePath.base = null
-    return path.format(filePath)
-  }
 
 async function onNewFile(filename) {
     const ocrFile = await imageToOCRPdf(path.join(BASE_DIR, filename), path.join(WORK_DIR, fileWithPdfExtension(filename)))
