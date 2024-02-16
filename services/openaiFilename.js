@@ -42,20 +42,13 @@ async function waitForRun(run) {
 export async function inferFileNameAndDirectory(inputFilename) {
     const filename = inputFilename.toString().trim()
     console.log(`processing file ${filename}`)
-    fs.open(filename, 'r', (err, _) => {
-        if (err) {
-            console.error(`Error while accessing file ${filename}: ${err}`)
-            return
-        }
-    })
-    console.log("opened readStream")
     const file = await openai.files.create({
         file: fs.createReadStream(filename),
         purpose: 'assistants'
     })
     console.log(`file uploaded: ${JSON.stringify(file)}`)
     
-    await Sleep(1000)
+    await Sleep(1000) //somehow it still takes a bit of time for the assistant to be able to process the file
 
     const run = await openai.beta.threads.createAndRun({
         assistant_id: ASSISTANT_ID,
