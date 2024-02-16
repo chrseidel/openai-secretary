@@ -21,7 +21,7 @@ async function onNewFile(filename) {
 }
 
 async function main() {
-    await watchFilesystem(BASE_DIR, onNewFile)
+    await watchFilesystem(config.watchdir, onNewFile)
 }
 
 await main()
