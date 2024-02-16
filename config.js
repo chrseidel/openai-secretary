@@ -10,5 +10,6 @@ export default {
             credentials_path: path.join(process.cwd(), 'service_account_key.json'),
             root_folder_id: process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID
         },
-        ocr_lang: "deu"
+        ocr_lang: "deu",
+        delete_file_after_processing: process.env.DELETE_FILE_AFTER_UPLOAD || true
     }

@@ -117,6 +117,4 @@ export async function imageToOCRPdf(inputFile, outputFile) {
   const mergedPdf = await mergePdfs(pdfs)
   console.log(`storing merged pdf here: ${outputFile}`)
   await fs.writeFile(outputFile, Buffer.from(mergedPdf))
-
-  return outputFile
 };

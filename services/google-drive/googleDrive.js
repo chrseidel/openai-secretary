@@ -87,5 +87,5 @@ export async function storePdfInGoogleDrive(file, targetDirs, targetFilename) {
     const dirs = targetDirs.split(path.sep).filter((dir) => dir !== "")
     console.log(`targeting directory ${JSON.stringify(dirs)}`)
     const targetDirId = await getTargetDirectoryId(dirs, ROOT_FOLDER_ID)
-    const newFileId = await uploadPDF(targetDirId, targetFilename, () => fs.createReadStream(file))
+    return await uploadPDF(targetDirId, targetFilename, () => fs.createReadStream(file))
 }
