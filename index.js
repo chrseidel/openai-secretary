@@ -4,7 +4,7 @@ import { inferFileNameAndDirectory } from "./services/openaiFilename.js";
 import path from "path"
 import { storePdfInGoogleDrive } from "./services/google-drive/googleDrive.js";
 import config from "./config.js"
-import { fileWithPdfExtension } from "./services/fileUtils.js"
+import { fileWithPdfExtension } from "./services/utils.js"
 
 const BASE_DIR = config.watchdir
 const WORK_DIR = config.workdir

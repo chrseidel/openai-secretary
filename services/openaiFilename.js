@@ -1,6 +1,7 @@
 import fs from "fs";
 import OpenAI from "openai";
 import config from "../config.js"
+import { Sleep } from "./utils.js"
 
 const openai = new OpenAI({
     apiKey : config.openai_api_key,
@@ -10,10 +11,6 @@ const ASSISTANT_ID = "asst_648j1djJR1kxcQmSEH4rZv4M"
 const RUN_STATUS_SUCCESS = ['completed']
 const RUN_STATUS_INPROGRESS = ['queued', 'in_progress']
 const RUN_STATUS_FAILED = ['requires_action', 'cancelling', 'cancelled', 'failed', 'expired']
-
-function Sleep(milliseconds) {
-    return new Promise(resolve => setTimeout(resolve, milliseconds));
-}
 
 async function waitForRun(run) {
     return new Promise( async (resolve, reject) => {
