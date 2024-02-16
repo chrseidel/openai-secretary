@@ -11,5 +11,9 @@ export default {
             root_folder_id: process.env.GOOGLE_DRIVE_ROOT_FOLDER_ID
         },
         ocr_lang: "deu",
-        delete_file_after_processing: process.env.DELETE_FILE_AFTER_UPLOAD || true
+        delete_file_after_processing: process.env.DELETE_FILE_AFTER_UPLOAD || true,
+        retries: {
+            openai_processing: 3,
+            pdf_loading: 3,
+        }
     }

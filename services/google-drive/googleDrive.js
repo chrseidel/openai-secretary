@@ -66,12 +66,12 @@ async function getTargetDirectoryId(directories, currentDirId) {
     fields: '*',
     spaces: 'drive',
   })
-  const maybeDir = dirList.data.files.find((d) => d.name == dirName)
+  const maybeDir = dirList.data.files.find((d) => d.name.toUpperCase().includes(dirName.toUpperCase()))
   if (maybeDir) {
-    console.log(`found existing directory ${dirName}`)
+    console.debug(`[GOOGLE DRIVE] found existing directory ${dirName}`)
     return getTargetDirectoryId(directories, maybeDir.id)
   } else {
-    console.log(`creating new directory ${dirName}`)
+    console.log(`[GOOGLE DRIVE] creating new directory ${dirName}`)
     const newDirId = await createDirectory(currentDirId, dirName)
     return getTargetDirectoryId(directories, newDirId)
   }
@@ -84,8 +84,8 @@ async function getTargetDirectoryId(directories, currentDirId) {
  * @param {String} targetFilename 
  */
 export async function storePdfInGoogleDrive(file, targetDirs, targetFilename) {
-    const dirs = targetDirs.split(path.sep).filter((dir) => dir !== "")
-    console.log(`targeting directory ${JSON.stringify(dirs)}`)
+    const dirs = targetDirs.split('/').map((dir) => dir.trim).filter((dir) => dir !== "")
+    console.log(`targeting directo'ry ${JSON.stringify(dirs)}`)
     const targetDirId = await getTargetDirectoryId(dirs, ROOT_FOLDER_ID)
     return await uploadPDF(targetDirId, targetFilename, () => fs.createReadStream(file))
 }

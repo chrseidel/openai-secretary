@@ -1,4 +1,3 @@
-import fs from "fs";
 import OpenAI from "openai";
 import config from "../config.js"
 import { Sleep } from "./utils.js"
@@ -17,44 +16,30 @@ async function waitForRun(run) {
         var runStatus = await openai.beta.threads.runs.retrieve(run.thread_id, run.id)
         while(true) {
             if (RUN_STATUS_FAILED.includes(runStatus.status)) { 
-                console.log(`run failed: ${runStatus.status}`)
+                console.log(`[OPENAI] run failed: ${runStatus.status}`)
                 reject(run) 
                 break
             }
             if (RUN_STATUS_SUCCESS.includes(runStatus.status)) { 
-                console.log(`run successful`)
+                console.log(`[OPENAI] run successful`)
                 resolve(run) 
                 break
             }
             if (RUN_STATUS_INPROGRESS.includes(runStatus.status)) {
                 await Sleep(500) 
-                console.log(`waiting for run: ${runStatus.status}`)
+                console.log(`[OPENAI] waiting for run: ${runStatus.status}`)
                 runStatus = await openai.beta.threads.runs.retrieve(run.thread_id, run.id)
             }
         }
     })
 }
 
-/**
- * 
- * @param {String} inputFilename 
- */
-export async function inferFileNameAndDirectory(inputFilename) {
-    const filename = inputFilename.toString().trim()
-    console.log(`processing file ${filename}`)
-    const file = await openai.files.create({
-        file: fs.createReadStream(filename),
-        purpose: 'assistants'
-    })
-    console.log(`file uploaded: ${JSON.stringify(file)}`)
-    
-    await Sleep(1000) //somehow it still takes a bit of time for the assistant to be able to process the file
-
+async function processText(text) {
     const run = await openai.beta.threads.createAndRun({
         assistant_id: ASSISTANT_ID,
         thread: {
           messages: [
-            { role: "user", content: "", file_ids: [ file.id ] },
+            { role: "user", content: text, file_ids: [] },
           ],
         },
       });
@@ -63,17 +48,35 @@ export async function inferFileNameAndDirectory(inputFilename) {
 
     const messagePage = await openai.beta.threads.messages.list(run.thread_id)
     const result = messagePage.data[0].content[0].text.value.replace("```json", "").replace("```", "")
+
     try {
         const response = JSON.parse(result)
         if (!response.directory || !response.filename) {
-            console.log(`openai didn't respon correctly. Filename or directory missing! \n${result}`)
+            console.log(`[OPENAI] openai didn't respond correctly. Filename or directory missing! \n${result}`)
+            return null
         }
         console.log(JSON.stringify(response))
-        const deleteFileResponse = JSON.stringify(await openai.files.del(file.id))
-        console.log(`deleted file in openai platform: ${deleteFileResponse}`)
         return response
     } catch(err) {
-        console.log(`ERROR during openai assitant processing. Assistant response:\n ${result}`)
+        console.log(`[OPENAI] ERROR during openai assitant processing. ${err} \n Assistant response:\n ${result}`)
+        return null
     }
-    
+}
+
+/**
+ * 
+ * @param {String} text 
+ */
+export async function inferFileNameAndDirectoryByPdfText(text) {  
+    let attempt = 0
+    while(attempt < config.retries.openai_processing) {
+        const response = await processText(text)
+        if (response) {
+            return response
+        } else {
+            console.log(`[OPENAI] openai response invalid on attempt ${attempt}`)
+            attempt++
+        }
+    }
+    console.log(`[OPENAI] ERROR! OpenAi assistant was not able to process the document`)
 }

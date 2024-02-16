@@ -1,27 +1,37 @@
 import { watch } from "fs/promises"
 import { existsSync } from "fs";
 import path from "path";
+import { Channel } from "queueable";
 
-export async function watchFilesystem(dir, onFileAdded) {
-  console.log(`watching ${dir}...`)
+const filenameChannel = new Channel()
+
+export async function onFileAdded(fn) {
+  for await (let file of filenameChannel) {
+    console.log(`[FILESYSTEM] processing ${file}`)
+    await fn(file)
+  }
+}
+
+export async function watchFilesystem(dir) {
+  console.log(`[FILESYSTEM] watching ${dir}...`)
   try {
     //caveats of watch: https://nodejs.org/docs/latest/api/fs.html#caveats
-    const watcher = watch(dir);
-    for await (const event of watcher) {
+    for await (let event of watch(dir)) {
       console.log(JSON.stringify(event))
         if (event.eventType !== 'rename') {
-          console.log(`notified event of type ${event.eventType}. Ignoring this event.`)
+          console.log(`[FILESYSTEM] notified event of type ${event.eventType}. Ignoring this event.`)
           continue
         }
         if (!existsSync(path.join(dir, event.filename))) {
-          console.log(`file ${event.filename} has been deleted.`)
+          console.log(`f[FILESYSTEM] ile ${event.filename} has been deleted.`)
           continue
         }
         if (path.parse(event.filename).ext != ".pdf") {
-          console.log(`${event.filename} is not a PDF. Ignoring.`)
+          console.log(`[FILESYSTEM] ${event.filename} is not a PDF. Ignoring.`)
           continue
         }
-        await onFileAdded(event.filename)
+        console.log(`[FILESYSTEM] pushing ${event.filename} to buffer`)
+        filenameChannel.push(event.filename)
     }
   } catch (err) {
     if (err.name === 'AbortError')

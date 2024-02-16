@@ -31,13 +31,27 @@ async function pdfPageToImage(pdfDoc, pageNum, onDone) {
   return imageBuffer
 }
 
+async function loadPdf(pdfFile) {
+  let attempt = 0
+  while (attempt < config.retries.pdf_loading) {
+    try {
+      return await getDocument(pdfFile).promise
+    } catch(err) {
+      attempt++
+      console.log(`[OCR] error during loading of PDF: ${err}. ${(attempt == config.retries.pdf_loading) ? "FAILED" : "retrying..."}`)
+      await Sleep(500)
+    }
+  }
+  throw(`[OCR] Failed to load PDF data from ${pdfFile} after attempt number ${attempt}`)
+}
+
 /**
  * 
  * @param {String} pdfFile 
  * @returns Array<Buffer>
  */
 async function pdfToImages(pdfFile) {
-  const pdfDoc = await getDocument(pdfFile).promise
+  const pdfDoc = await loadPdf(pdfFile)
 
   var pagesDone = 0
   const promises = []
@@ -47,15 +61,15 @@ async function pdfToImages(pdfFile) {
 
   await new Promise(async (resolve, reject) => {
     while(pagesDone < promises.length) {
+      await Sleep(100)
       const percentage = Math.ceil(100*pagesDone/promises.length)
       if (stdout.isTTY) {
         stdout.clearLine(0)
         stdout.cursorTo(0)
-        stdout.write(`Rendering pages as images for OCR: ${percentage}%`)
+        stdout.write(`[OCR] Rendering pages as images for OCR: ${percentage}%`)
       } else {
-        console.log(`Rendering pages as images for OCR: ${percentage}%`)
+        console.log(`[OCR] Rendering pages as images for OCR: ${percentage}%`)
       }
-      await Sleep(100)
     }
     console.log(" done")
     resolve()
@@ -74,7 +88,7 @@ async function pdfToImages(pdfFile) {
  * @returns {Uint8Array}
  */
 async function mergePdfs(pdfs) {
-  console.log(`merging ${pdfs.length} binary pdfs`)
+  console.debug(`[OCR] merging ${pdfs.length} binary pdfs`)
   const result = await PDFDocument.create()
   for (let pdf of pdfs) {
     const d = await PDFDocument.load(Buffer.from(pdf))
@@ -85,36 +99,40 @@ async function mergePdfs(pdfs) {
   return await result.save()
 }
 
-async function ocrPdfAsync(imageBuffers) {
-  const ocrScheduler = createScheduler()
+const ocrScheduler = createScheduler()
+  
+for (let i = 0; i< os.cpus().length; i++) {
+  console.log(`[OCR] setting up OCR worker ${i+1}`)
+  ocrScheduler.addWorker(await createWorker(config.ocr_lang))
+}
 
-  for (let i = 0; i< os.cpus().length; i++) {
-    console.log(`setting up OCR worker ${i+1}`)
-    ocrScheduler.addWorker(await createWorker(config.ocr_lang))
-  }
+async function ocrPdfAsync(imageBuffers) {
   const promises = imageBuffers.map((imageBuffer) => ocrScheduler.addJob("recognize", imageBuffer, {pdfTitle: "scanned doc"}, {pdf: true}))
 
   const pdfs = []
+  const texts = []
   for (let promise of promises) {
-    const {data: {_, pdf}} = await promise
+    const {data: {text, pdf}} = await promise
     pdfs.push(pdf)
+    texts.push(text)
   }
-  return pdfs
+  return {pdfs, texts}
 }
 
 /**
  * 
  * @param {String} inputFile "fully qualified path with filename to be read"
  * @param {String} outputFile "fully qualified path with filename to be written"
- * @returns {String} "written file"
+ * @returns {String} "recognized text"
  */
-export async function imageToOCRPdf(inputFile, outputFile) {
-  console.log(`extracting PDF pages as images from ${inputFile}`)
+export async function createOcrPdf(inputFile, outputFile) {
+  console.log(`[OCR] extracting PDF pages as images from ${inputFile}`)
   const imageBuffers = await pdfToImages(inputFile)
 
-  const pdfs = await ocrPdfAsync(imageBuffers)
+  const {pdfs, texts} = await ocrPdfAsync(imageBuffers)
   
   const mergedPdf = await mergePdfs(pdfs)
   console.log(`storing merged pdf here: ${outputFile}`)
   await fs.writeFile(outputFile, Buffer.from(mergedPdf))
+  return texts.join()
 };
