@@ -1,82 +1,66 @@
-import OpenAI from "openai";
+import { OpenAI } from "openai";
 import config from "../config.js"
 import { Sleep } from "./utils.js"
+import { Readable } from "stream"
+import { createReadStream } from "fs"
 
 const openai = new OpenAI({
     apiKey : config.openai_api_key,
 });
 
 const ASSISTANT_ID = "asst_648j1djJR1kxcQmSEH4rZv4M"
-const RUN_STATUS_SUCCESS = ['completed']
-const RUN_STATUS_INPROGRESS = ['queued', 'in_progress']
-const RUN_STATUS_FAILED = ['requires_action', 'cancelling', 'cancelled', 'failed', 'expired']
 
-async function waitForRun(run) {
-    return new Promise( async (resolve, reject) => {
-        var runStatus = await openai.beta.threads.runs.retrieve(run.thread_id, run.id)
-        while(true) {
-            if (RUN_STATUS_FAILED.includes(runStatus.status)) { 
-                console.log(`[OPENAI] run failed: ${runStatus.status}`)
-                reject(run) 
-                break
-            }
-            if (RUN_STATUS_SUCCESS.includes(runStatus.status)) { 
-                console.log(`[OPENAI] run successful`)
-                resolve(run) 
-                break
-            }
-            if (RUN_STATUS_INPROGRESS.includes(runStatus.status)) {
-                await Sleep(500) 
-                console.log(`[OPENAI] waiting for run: ${runStatus.status}`)
-                runStatus = await openai.beta.threads.runs.retrieve(run.thread_id, run.id)
-            }
-        }
-    })
-}
+export async function inferFromImage(imageBuffer) {
+    console.log("uploading file")
+    const openAiUploadedFile = await openai.files.create({
+            file: Readable.from(imageBuffer),
+            purpose: "fine-tune"
+        })
 
-async function processText(text) {
-    const run = await openai.beta.threads.createAndRun({
-        assistant_id: ASSISTANT_ID,
-        thread: {
-          messages: [
-            { role: "user", content: text, file_ids: [] },
-          ],
-        },
+    console.log(`Uploaded file. result: ${JSON.stringify(openAiUploadedFile, null, 2)}`)
+
+    const thread = await openai.beta.threads.create({
+        messages: [
+          {
+            "role": "user",
+            "content": [
+                {
+                    "type": "image_file",
+                    "image_file": {
+                        "file_id": openAiUploadedFile.id,
+                        "detail": "high"
+                    }
+                }
+            ]
+          }
+        ]
       });
+    
+    console.log(`running assistant`)
+    const run = await openai.beta.threads.runs.create(
+        thread.id,
+        { 
+            assistant_id: ASSISTANT_ID,
+            stream: true
+         },
+    );
 
-    await waitForRun(run)
-
-    const messagePage = await openai.beta.threads.messages.list(run.thread_id)
+    for await (const event of run) {
+        console.log(event)
+    }
+    console.log("run should be done")
+    const messagePage = await openai.beta.threads.messages.list(thread.id)
+    console.log(`got back page of messages: ${JSON.stringify(messagePage, null, 2)}`)
     const result = messagePage.data[0].content[0].text.value.replace("```json", "").replace("```", "")
+    console.log(`got a result: ${JSON.stringify(result, null, 2)}`)
 
-    try {
-        const response = JSON.parse(result)
-        if (!response.directory || !response.filename) {
-            console.log(`[OPENAI] openai didn't respond correctly. Filename or directory missing! \n${result}`)
-            return null
-        }
-        console.log(JSON.stringify(response))
-        return response
-    } catch(err) {
-        console.log(`[OPENAI] ERROR during openai assitant processing. ${err} \n Assistant response:\n ${result}`)
-        return null
-    }
+    console.log(`deleting file with id ${openAiUploadedFile.id}`)
+    await openai.files.del(openAiUploadedFile.id)
+    console.log("all done")
 }
 
-/**
- * 
- * @param {String} text 
- */
-export async function inferFileNameAndDirectoryByPdfText(text) {  
-    let attempt = 0
-    while(attempt < config.retries.openai_processing) {
-        const response = await processText(text)
-        if (response) {
-            return response
-        } else {
-            console.log(`[OPENAI] openai response invalid on attempt ${attempt}`)
-            attempt++
-        }
-    }
-    console.log(`[OPENAI] ERROR! OpenAi assistant was not able to process the document`)
-}
+// async function main() {
+//     await inferFromImage("ignore")
+// }
+
+// await main()

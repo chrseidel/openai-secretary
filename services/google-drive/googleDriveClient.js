@@ -1,11 +1,7 @@
 import {promises as fs} from "fs";
-import { authenticate } from "@google-cloud/local-auth";
 import { google } from "googleapis";
-import path from "path";
 import { OAuth2Client } from 'google-auth-library';
 import config from "../../config.js"
-
-const API_KEY='AIzaSyAGV5Hk8uIn51ZX54HDKdN_UH3jMNKxlEE';
 
 // If modifying these scopes, delete token.json.
 const SCOPES = ['https://www.googleapis.com/auth/drive'];
