@@ -39,3 +39,8 @@ Here is an example for a response:
 Google drive authentication is happening via a service account. This has to be setup in your google cloud console. Download the key and store it as `service_account_key.json` in the root directory. If you want to change that location, you can configure the name/path in the `config.js` file. 
 
 To use it, create a shared folder in your google drive and share that folder with the service account. Add the service account as an editor.
+
+## Note for arm based platforms (e.g. raspberry pi, Apple Silicon, ... )
+This project uses the [node-canvas](https://github.com/Automattic/node-canvas) library. The precompiled packages doesn't automatically work on this platform. You have to install the following packages before:
+
+```sudo apt-get install build-essential libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev```

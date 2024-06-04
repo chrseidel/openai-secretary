@@ -1,9 +1,9 @@
 import { createWorker, createScheduler } from "tesseract.js";
 import {promises as fs} from "fs";
 import config from "../config.js";
-import { getDocument } from "pdfjs-dist"
+import pdfjs from "pdfjs-dist"
 import { PDFDocument } from "pdf-lib";
-import { createCanvas } from "canvas";
+import * as Canvas from 'canvas';
 import { readableToBuffer } from "./utils.js";
 import os from "os";
 import { Sleep } from "./utils.js"
@@ -17,10 +17,13 @@ import { stdout } from "process"
  * @returns 
  */
 async function pdfPageToImage(pdfDoc, pageNum, onDone) {
+  console.log(`converting pdf page # ${pageNum} to image`)
   const page = await pdfDoc.getPage(pageNum)
   const viewport = page.getViewport({scale: 1.5})
-  const canvas = createCanvas(viewport.width, viewport.height)
+  console.log(`creating canvas with size ${viewport.width} * ${viewport.height}`)
+  const canvas = Canvas.default.createCanvas(viewport.width, viewport.height)
   const ctx = canvas.getContext('2d')
+  console.log(`rendering page into canvas`)
   await page.render({
     canvasContext: ctx,
     viewport: viewport,
@@ -35,7 +38,8 @@ async function loadPdf(pdfFile) {
   let attempt = 0
   while (attempt < config.retries.pdf_loading) {
     try {
-      return await getDocument(pdfFile).promise
+      console.log(`loading PDF document via pdfjs. Attempt #${attempt}`)
+      return await pdfjs.getDocument(pdfFile).promise
     } catch(err) {
       attempt++
       console.log(`[OCR] error during loading of PDF: ${err}. ${(attempt == config.retries.pdf_loading) ? "FAILED" : "retrying..."}`)
@@ -51,6 +55,7 @@ async function loadPdf(pdfFile) {
  * @returns Array<Buffer>
  */
 async function pdfToImages(pdfFile) {
+  console.log(`loading pdf file ${pdfFile}`)
   const pdfDoc = await loadPdf(pdfFile)
 
   var pagesDone = 0
