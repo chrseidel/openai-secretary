@@ -37,10 +37,8 @@ process.env.GOOGLE_APPLICATION_CREDENTIALS = CREDENTIALS_PATH
       return client;
     }
     try {
-        // client = await authenticate({
-            client = await new google.auth.GoogleAuth({
+          client = await new google.auth.GoogleAuth({
           scopes: SCOPES,
-        //   keyfilePath: CREDENTIALS_PATH,
         }).getClient();
         if (client.credentials) {
             await saveCredentials(client);

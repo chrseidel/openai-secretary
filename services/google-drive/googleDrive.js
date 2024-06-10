@@ -64,7 +64,7 @@ async function getTargetDirectoryId(directories, currentDirId) {
     fields: '*',
     spaces: 'drive',
   })
-  const maybeDir = dirList.data.files.find((d) => d.name.toUpperCase().includes(dirName.toUpperCase()))
+  const maybeDir = dirList.data.files.find((d) => d.name.toUpperCase() === dirName.toUpperCase())
   if (maybeDir) {
     console.debug(`[GOOGLE DRIVE] found existing directory ${dirName}`)
     return getTargetDirectoryId(directories, maybeDir.id)
