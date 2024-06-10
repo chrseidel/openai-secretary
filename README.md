@@ -32,6 +32,7 @@ Here is an example for a response:
 
 ## Required environment variables:
 * **OPENAI_API_KEY** - Your openai plattform api key
+* **OPENAI_ASSISTANT_ID** - the ID of the openai assistant that you have created and configured
 * **GOOGLE_DRIVE_ROOT_FOLDER_ID** - ID of the shared directory that the service account uses as root
 
 ## Google Drive login

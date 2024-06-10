@@ -22,7 +22,8 @@ function cleanAssistantResponse(response) {
  * @param {Buffer} imageBuffer 
  */
 export async function inferFromImage(imageBuffer) {
-    writeFileSync('test.png', imageBuffer)
+    //TODO: process Buffer directly as Readable. Somehow Readable.from(imageBuffer) doesn't work...
+    writeFileSync('test.png', imageBuffer) 
     console.log("uploading file")
     const openAiUploadedFile = await openai.files.create({
             file: createReadStream('test.png'),
@@ -71,9 +72,3 @@ export async function inferFromImage(imageBuffer) {
     console.log("all done")
     return result
 }
-
-// async function main() {
-//     await inferFromImage("ignore")
-// }
-
-// await main()
