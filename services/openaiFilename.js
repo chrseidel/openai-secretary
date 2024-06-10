@@ -2,18 +2,30 @@ import { OpenAI } from "openai";
 import config from "../config.js"
 import { Sleep } from "./utils.js"
 import { Readable } from "stream"
-import { createReadStream } from "fs"
+import { writeFileSync, createReadStream } from "fs"
 
 const openai = new OpenAI({
-    apiKey : config.openai_api_key,
+    apiKey : config.openai.api_key,
 });
 
-const ASSISTANT_ID = "asst_648j1djJR1kxcQmSEH4rZv4M"
+/**
+ * 
+ * @param {*} response 
+ * @returns 
+ */
+function cleanAssistantResponse(response) {
+    return response.replace("```json", "").replace("```", "").replace(`\\"`, `"`)
+}
 
+/**
+ * 
+ * @param {Buffer} imageBuffer 
+ */
 export async function inferFromImage(imageBuffer) {
+    writeFileSync('test.png', imageBuffer)
     console.log("uploading file")
     const openAiUploadedFile = await openai.files.create({
-            file: Readable.from(imageBuffer),
+            file: createReadStream('test.png'),
             purpose: "fine-tune"
         })
 
@@ -40,7 +52,7 @@ export async function inferFromImage(imageBuffer) {
     const run = await openai.beta.threads.runs.create(
         thread.id,
         { 
-            assistant_id: ASSISTANT_ID,
+            assistant_id: config.openai.assistant_id,
             stream: true
          },
     );
@@ -51,12 +63,13 @@ export async function inferFromImage(imageBuffer) {
     console.log("run should be done")
     const messagePage = await openai.beta.threads.messages.list(thread.id)
     console.log(`got back page of messages: ${JSON.stringify(messagePage, null, 2)}`)
-    const result = messagePage.data[0].content[0].text.value.replace("```json", "").replace("```", "")
+    const result = JSON.parse(cleanAssistantResponse(messagePage.body.data[0].content[0].text.value))
     console.log(`got a result: ${JSON.stringify(result, null, 2)}`)
 
     console.log(`deleting file with id ${openAiUploadedFile.id}`)
     await openai.files.del(openAiUploadedFile.id)
     console.log("all done")
+    return result
 }
 
 // async function main() {

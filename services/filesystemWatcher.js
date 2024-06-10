@@ -31,7 +31,7 @@ export async function watchFilesystem(dir) {
           continue
         }
         console.log(`[FILESYSTEM] pushing ${event.filename} to buffer`)
-        filenameChannel.push(event.filename)
+        filenameChannel.push(path.join(dir, event.filename))
     }
   } catch (err) {
     if (err.name === 'AbortError')

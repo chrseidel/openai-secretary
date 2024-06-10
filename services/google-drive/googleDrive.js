@@ -5,8 +5,6 @@ import config from "../../config.js";
 
 const drive = await getDriveClient()
 
-const ROOT_FOLDER_ID = config.google_drive.root_folder_id
-
 /**
  * 
  * @param {Stting} parentFolderId 
@@ -83,9 +81,9 @@ async function getTargetDirectoryId(directories, currentDirId) {
  * @param {String} targetDirs
  * @param {String} targetFilename 
  */
-export async function storePdfInGoogleDrive(file, targetDirs, targetFilename) {
-    const dirs = targetDirs.split('/').map((dir) => dir.trim).filter((dir) => dir !== "")
+export async function storePdfInGoogleDrive(file, directory, filename) {
+    const dirs = directory.split('/').map((dir) => dir.trim()).filter((dir) => dir !== "")
     console.log(`targeting directo'ry ${JSON.stringify(dirs)}`)
-    const targetDirId = await getTargetDirectoryId(dirs, ROOT_FOLDER_ID)
-    return await uploadPDF(targetDirId, targetFilename, () => fs.createReadStream(file))
+    const targetDirId = await getTargetDirectoryId(dirs, config.google_drive.root_folder_id)
+    return await uploadPDF(targetDirId, filename, () => fs.createReadStream(file))
 }
