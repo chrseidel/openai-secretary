@@ -45,7 +45,7 @@ process.env.GOOGLE_APPLICATION_CREDENTIALS = CREDENTIALS_PATH
           }
         return client;
     } catch (err) {
-        console.log(`ERROR DURING AUTHENTICATION: ${err}`)
+        console.log(`[GOOGLE DRIVE AUTH] ERROR DURING AUTHENTICATION: ${err}`)
         throw err
     }
   }
@@ -57,7 +57,7 @@ process.env.GOOGLE_APPLICATION_CREDENTIALS = CREDENTIALS_PATH
    * @return {Promise<void>}
    */
   async function saveCredentials(client) {
-    console.log(`reading credentials file from ${CREDENTIALS_PATH}`)
+    console.log(`[GOOGLE DRIVE AUTH] reading credentials file from ${CREDENTIALS_PATH}`)
     const content = await fs.readFile(CREDENTIALS_PATH, 'utf-8');
     const payload = JSON.stringify({
       type: 'service_account',

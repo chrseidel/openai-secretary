@@ -19,7 +19,7 @@ async function createDirectory(parentFolderId, directoryName) {
       parents: [parentFolderId],
     }
   })
-  console.log(`created dir with id ${createdFolder.data.id}`)
+  console.log(`[GOOGLE DRIVE] created dir "${directoryName}" with id ${createdFolder.data.id}`)
   return createdFolder.data.id;    
 }
 
@@ -31,7 +31,7 @@ async function createDirectory(parentFolderId, directoryName) {
  * @returns String
  */
 async function uploadPDF(parentDirId, filename, readFile) {
-  console.log(`uploading file ${filename} into folder ${parentDirId}`)
+  console.log(`[GOOGLE DRIVE] uploading file "${filename}" into folder "${parentDirId}"`)
       try {
         const file = await drive.files.create({
           requestBody: {
@@ -43,10 +43,10 @@ async function uploadPDF(parentDirId, filename, readFile) {
             body: readFile(),
           },
         });
-        console.log('File Id:', file.data.id);
+        console.log('[GOOGLE DRIVE] new uploaded file Id:', file.data.id);
         return file.data.id;
       } catch (err) {
-        console.log(`ERROR during file upload: ${err}`)
+        console.log(`[GOOGLE DRIVE] ERROR during file upload: ${err}`)
         throw err;
       }
 }
@@ -59,14 +59,16 @@ async function uploadPDF(parentDirId, filename, readFile) {
 async function getTargetDirectoryId(directories, currentDirId) {
   if (directories.length == 0) return currentDirId
   const dirName = directories.shift()
+  console.log(`[GOOGLE DRIVE] searching for directory "${dirName}" in directory with ID ${currentDirId}`)
   const dirList = await drive.files.list({
     q: `mimeType=\'application/vnd.google-apps.folder\' and parents in \'${currentDirId}\'`,
     fields: '*',
     spaces: 'drive',
   })
-  const maybeDir = dirList.data.files.find((d) => d.name.toUpperCase() === dirName.toUpperCase())
+
+  const maybeDir = dirList.data.files.find((d) => d.name.trim().toUpperCase() === dirName.toUpperCase())
   if (maybeDir) {
-    console.debug(`[GOOGLE DRIVE] found existing directory ${dirName}`)
+    console.debug(`[GOOGLE DRIVE] found existing directory "${dirName}" with ID ${maybeDir.id}`)
     return getTargetDirectoryId(directories, maybeDir.id)
   } else {
     console.log(`[GOOGLE DRIVE] creating new directory ${dirName}`)
@@ -83,7 +85,7 @@ async function getTargetDirectoryId(directories, currentDirId) {
  */
 export async function storePdfInGoogleDrive(file, directory, filename) {
     const dirs = directory.split('/').map((dir) => dir.trim()).filter((dir) => dir !== "")
-    console.log(`targeting directo'ry ${JSON.stringify(dirs)}`)
+    console.log(`[GOOGLE DRIVE] targeting directory ${JSON.stringify(dirs)}`)
     const targetDirId = await getTargetDirectoryId(dirs, config.google_drive.root_folder_id)
     return await uploadPDF(targetDirId, filename, () => fs.createReadStream(file))
 }

@@ -2,8 +2,7 @@ import process from "process"
 import path from "path"
 
 export default {
-        watchdir: "/Users/christoph.seidel/Downloads",
-        workdir: "/tmp",
+        watchdir: process.env.WATCH_DIR,
         openai: {
             api_key: process.env.OPENAI_API_KEY,
             assistant_id: process.env.OPENAI_ASSISTANT_ID

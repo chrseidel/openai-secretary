@@ -1,12 +1,13 @@
 import { OpenAI } from "openai";
 import config from "../config.js"
-import { Sleep } from "./utils.js"
-import { Readable } from "stream"
 import { writeFileSync, createReadStream } from "fs"
+import { unlink } from "fs/promises"
 
 const openai = new OpenAI({
     apiKey : config.openai.api_key,
 });
+
+const TMPFILE = 'tmp.png'
 
 /**
  * 
@@ -22,15 +23,17 @@ function cleanAssistantResponse(response) {
  * @param {Buffer} imageBuffer 
  */
 export async function inferFromImage(imageBuffer) {
+    
     //TODO: process Buffer directly as Readable. Somehow Readable.from(imageBuffer) doesn't work...
-    writeFileSync('test.png', imageBuffer) 
-    console.log("uploading file")
+    writeFileSync(TMPFILE, imageBuffer) 
+    console.log("[OPENAI] uploading file")
     const openAiUploadedFile = await openai.files.create({
-            file: createReadStream('test.png'),
+            file: createReadStream(TMPFILE),
             purpose: "fine-tune"
         })
 
-    console.log(`Uploaded file. result: ${JSON.stringify(openAiUploadedFile, null, 2)}`)
+    await unlink(TMPFILE)
+    console.debug(`[OPENAI] Uploaded file. result: ${JSON.stringify(openAiUploadedFile, null, 2)}`)
 
     const thread = await openai.beta.threads.create({
         messages: [
@@ -49,7 +52,7 @@ export async function inferFromImage(imageBuffer) {
         ]
       });
     
-    console.log(`running assistant`)
+    console.log(`[OPENAI] running assistant`)
     const run = await openai.beta.threads.runs.create(
         thread.id,
         { 
@@ -59,16 +62,15 @@ export async function inferFromImage(imageBuffer) {
     );
 
     for await (const event of run) {
-        console.log(event)
+        console.log(event.event)
     }
-    console.log("run should be done")
+    console.log("[OPENAI] run should be done")
     const messagePage = await openai.beta.threads.messages.list(thread.id)
-    console.log(`got back page of messages: ${JSON.stringify(messagePage, null, 2)}`)
     const result = JSON.parse(cleanAssistantResponse(messagePage.body.data[0].content[0].text.value))
-    console.log(`got a result: ${JSON.stringify(result, null, 2)}`)
+    console.log(`[OPENAI] got a result: ${JSON.stringify(result, null, 2)}`)
 
-    console.log(`deleting file with id ${openAiUploadedFile.id}`)
+    console.log(`[OPENAI] deleting file with id ${openAiUploadedFile.id}`)
     await openai.files.del(openAiUploadedFile.id)
-    console.log("all done")
+    console.log("[OPENAI] all done")
     return result
 }
