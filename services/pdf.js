@@ -1,5 +1,5 @@
 import config from "../config.js";
-import * as pdfjs from "pdfjs-dist/legacy/build/pdf.min.mjs";
+import * as pdfjs from "pdfjs-dist/legacy/build/pdf.mjs";
 import { createCanvas } from 'canvas';
 import { Sleep } from "./utils.js";
 
@@ -8,7 +8,7 @@ import { Sleep } from "./utils.js";
  * @param {string} pdfFilePath 
  * @returns {PDFDocumentProxy}
  */
-async function loadPdf(pdfFilePath) {
+export async function loadPdf(pdfFilePath) {
   let attempt = 0
   while (attempt < config.retries.pdf_loading) {
     try {
@@ -21,6 +21,42 @@ async function loadPdf(pdfFilePath) {
     }
   }
   throw(`[PDF] Failed to load PDF data from ${pdfFilePath} after attempt number ${attempt}`)
+}
+
+/**
+ * 
+ * @param {PDFPageProxy} page 
+ * @returns Buffer
+ */
+async function pdfPageAsImage(page) {
+  const viewport = page.getViewport({scale: 1.5})
+  const canvas = createCanvas(viewport.width, viewport.height)
+  const ctx = canvas.getContext('2d')
+
+  await page.render({
+    canvasContext: ctx,
+    viewport: viewport,
+  }).promise
+
+  return canvas.toBuffer()
+}
+
+/**
+ * 
+ * @param {PDFDocumentProxy} pdfDoc 
+ */
+export async function pdfPagesAsImages(pdfDoc) {
+
+  console.log(`[PDF] Loading PDF document successfull.`)
+  let pages = []
+  for (let i = 1; i <= pdfDoc.numPages; i++) {
+    console.log(`[PDF] processing page ${i}`)
+    const page = await pdfDoc.getPage(i)
+    console.log(`[PDF] loading of page ${i} done`)
+    pages.push(await pdfPageAsImage(page))
+  }
+
+  return pages
 }
 
 /**
