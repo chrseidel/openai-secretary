@@ -29,7 +29,7 @@ export async function loadPdf(pdfFilePath) {
  * @returns Buffer
  */
 async function pdfPageAsImage(page) {
-  const viewport = page.getViewport({scale: 1.5})
+  const viewport = page.getViewport({scale: 1.0})
   const canvas = createCanvas(viewport.width, viewport.height)
   const ctx = canvas.getContext('2d')
 
@@ -75,7 +75,7 @@ export async function pdfToImage(inputFilePath) {
     console.log(`[PDF] processing page ${i}`)
     const page = await pdfDoc.getPage(i)
     console.log(`[PDF] loading of page ${i} done`)
-    const viewport = page.getViewport({scale: 1.5})
+    const viewport = page.getViewport({scale: 1.0})
     if (resultCanvas == null) {
       const width = viewport.width
       const height = viewport.height * pdfDoc.numPages
