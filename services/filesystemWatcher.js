@@ -23,7 +23,7 @@ export async function watchFilesystem(dir) {
           continue
         }
         if (!existsSync(path.join(dir, event.filename))) {
-          console.log(`f[FILESYSTEM] ile ${event.filename} has been deleted.`)
+          console.log(`[FILESYSTEM] file ${event.filename} has been deleted.`)
           continue
         }
         if (path.parse(event.filename).ext != ".pdf") {
