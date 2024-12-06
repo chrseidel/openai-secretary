@@ -29,6 +29,29 @@ async function imagesToOcrPdfs(imageBuffers) {
   }
 
 /**
+ * Processes a list of image buffers to perform OCR, generating both PDF files with embedded text
+ * and a combined string of the recognized text from all pages.
+ * 
+ * @param {Buffer[]} imageBuffers - An array of image buffers to be processed.
+ * @returns {Promise<{pdfs: Buffer[], fullText: string}>} - A promise resolving to an object containing:
+ *   - `pdfPages`: An array of PDF buffers, one for each image.
+ *   - `text`: A single string with the concatenated text from all processed images.
+ * 
+ */
+async function imagesToOcrPdfsWithText(imageBuffers) {    
+    const promises = imageBuffers.map((imageBuffer) => ocrScheduler.addJob("recognize", imageBuffer, {pdfTitle: "scanned doc"}, {pdf: true}))
+  
+    const pdfs = []
+    let fullText = '';
+    for (let promise of promises) {
+      const { data: { text, pdf } } = await promise
+      pdfs.push(pdf)
+      fullText += text + '\n'; // Add a newline between pages for better readability
+    }
+    return { pdfPages: pdfs, text: fullText.trim() }
+  }
+
+/**
  * 
  * @param {Array<number[]>} pdfs 
  * @returns {Promise<Uint8Array>}
@@ -61,4 +84,17 @@ export async function ocrPdf(inputPdfFilePath) {
     console.log(`[OCR] storing OCR PDF to tmp file ${ocrPdfFilename}`)
     writeFileSync(ocrPdfFilename, ocrPdf)
     return ocrPdfFilename
+}
+
+export async function ocrPdfWithText(inputPdfFilePath) {
+
+    const pdf = await loadPdf(inputPdfFilePath)
+    const images = await pdfPagesAsImages(pdf)
+    console.log(`[OCR] OCRing ${inputPdfFilePath}`)
+    const { pdfPages, text } = await imagesToOcrPdfsWithText(images)
+    const ocrPdf = await mergePdfs(pdfPages)
+    const ocrPdfLocation = createTmpFileName("pdf")
+    console.log(`[OCR] storing OCR PDF to tmp file ${ocrPdfLocation}`)
+    writeFileSync(ocrPdfLocation, ocrPdf)
+    return { ocrPdfLocation, text }
 }

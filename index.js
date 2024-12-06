@@ -1,12 +1,12 @@
 import { watchFilesystem, onFileAdded } from "./services/filesystemWatcher.js";
 import { pdfToImage } from "./services/pdf.js"
-import { inferFromImage } from "./services/openaiFilename.js";
+import { inferFromImage, inferFromText } from "./services/openaiFilename.js";
 import { storePdfInGoogleDrive } from "./services/google-drive/googleDrive.js";
 import config from "./config.js"
 import { unlink } from "fs/promises"
-import { ocrPdf } from "./services/ocr.js";
+import { ocrPdf, ocrPdfWithText } from "./services/ocr.js";
 
-async function onNewFile(inputPdfFilePath) {
+async function runInferenceWithImageStrategy(inputPdfFilePath) {
     const fileAsImage = await pdfToImage(inputPdfFilePath)
     const eventualOcrPdfLocation = ocrPdf(inputPdfFilePath)
     console.log(`[SECRETARY] inferring filename and directory for document`)
@@ -14,6 +14,20 @@ async function onNewFile(inputPdfFilePath) {
 
     const ocrPdfLocation = await eventualOcrPdfLocation
 
+    return { ocrPdfLocation, aiResult }
+}
+
+async function runInferenceWithTextStrategy(inputPdfFilePath) {
+    const { ocrPdfLocation, text } = await ocrPdfWithText(inputPdfFilePath)
+    console.log(`[SECRETARY] inferring filename and directory for document`)
+    const aiResult = await inferFromText(text)
+
+    return { ocrPdfLocation, aiResult }
+}
+
+async function handleFile(inputPdfFilePath) {
+    const { ocrPdfLocation, aiResult} = (config.inference_strategy == 'text') ? runInferenceWithTextStrategy : runInferenceWithImageStrategy
+    
     const newFileId = await storePdfInGoogleDrive(ocrPdfLocation, aiResult.directory, aiResult.filename)
     console.log(`[SECRETARY] created google drive file: ${aiResult.directory}/${aiResult.filename} with ID ${newFileId}`)
     console.log(`[SECRETARY] deleting temporary OCR pdf file ${ocrPdfLocation}`)
@@ -26,7 +40,7 @@ async function onNewFile(inputPdfFilePath) {
 }
 
 async function main() {
-    const promiseOnFileAdded = onFileAdded(onNewFile)
+    const promiseOnFileAdded = onFileAdded(handleFile)
     const promiseFilesystemWatch = watchFilesystem(config.watchdir)
     await Promise.all([promiseFilesystemWatch, promiseOnFileAdded])
 }

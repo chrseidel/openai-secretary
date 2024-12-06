@@ -74,3 +74,35 @@ export async function inferFromImage(imageBuffer) {
     console.log("[OPENAI] all done")
     return result
 }
+
+export async function inferFromText(text) {
+    const thread = await openai.beta.threads.create({
+        messages: [
+          {
+            "role": "user",
+            "content": text
+          }
+        ]
+      });
+    
+    console.log(`[OPENAI] running assistant`)
+    const run = await openai.beta.threads.runs.create(
+        thread.id,
+        { 
+            assistant_id: config.openai.assistant_id,
+            stream: true
+         },
+    );
+
+    for await (const event of run) {
+        console.log(event.event)
+    }
+   
+    console.log("[OPENAI] run should be done")
+    const messagePage = await openai.beta.threads.messages.list(thread.id)
+    const result = JSON.parse(cleanAssistantResponse(messagePage.body.data[0].content[0].text.value))
+    console.log(`[OPENAI] got a result: ${JSON.stringify(result, null, 2)}`)
+
+    console.log("[OPENAI] all done")
+    return result
+}

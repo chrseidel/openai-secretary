@@ -18,5 +18,6 @@ export default {
     retries: {
         openai_processing: 3,
         pdf_loading: 3,
-    }
+    },
+    inference_strategy: 'text'
 }
