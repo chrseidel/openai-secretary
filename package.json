@@ -10,13 +10,13 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "canvas": "^2.11.2",
+    "canvas": "next",
     "googleapis": "^133.0.0",
     "husky": "^9.0.11",
     "images": "^3.2.4",
     "openai": "^4.47.3",
     "pdf-lib": "^1.17.1",
-    "pdfjs-dist": "^4.3.136",
+    "pdfjs-dist": "^4.8.69",
     "queueable": "^5.3.2",
     "tesseract.js": "^5.1.0"
   }

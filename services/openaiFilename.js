@@ -1,7 +1,7 @@
 import { OpenAI } from "openai";
 import config from "../config.js"
-import { writeFileSync, createReadStream } from "fs"
-import { unlink } from "fs/promises"
+import { createReadStream } from "fs"
+import { unlink, writeFile } from "fs/promises"
 import { createTmpFileName } from "./utils.js";
 
 const openai = new OpenAI({
@@ -25,11 +25,11 @@ export async function inferFromImage(imageBuffer) {
     
     //TODO: process Buffer directly as Readable. Somehow ReadStream.from(imageBuffer) doesn't work...
     const TMPFILE = createTmpFileName("png")
-    writeFileSync(TMPFILE, imageBuffer) 
+    await writeFile(TMPFILE, imageBuffer) 
     console.log("[OPENAI] uploading file")
     const openAiUploadedFile = await openai.files.create({
             file: createReadStream(TMPFILE),
-            purpose: "fine-tune"
+            purpose: "vision"
         })
 
     await unlink(TMPFILE)
